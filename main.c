@@ -11,9 +11,9 @@ int main(int argc, char* args[])
 
 
 
-    double complex a[1024] = {0};
-    double complex b[1024] = {0};
-    double complex c[1024] = {0};
+    double complex a[MAX_FFT] = {0};
+    double complex b[MAX_FFT] = {0};
+    double complex c[MAX_FFT] = {0};
 
     int test_amount;
     if(argc>1)
@@ -43,13 +43,16 @@ int main(int argc, char* args[])
 	    time_end = clock();
 	    fprintf(report,"%d,%ld,",
 		    sample_length,
-		    time_end-time_start);
+		    ((time_end-time_start)));
+
+#define OLI_FFT
+#ifdef OLI_FFT
 	    /* Slow FT test */
 	    time_start = clock();
 	    fourier2(a,c,sample_length);
 	    time_end = clock();
 	    fprintf(report,"%ld\n",time_end-time_start);
-
+#endif /* OLI_FFT */
 	}
 	printf("FIN FFT%d\n",sample_length);
     }

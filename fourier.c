@@ -1,15 +1,18 @@
 #include "main.h"
 
-static double complex root_unit[MAX_FFT+1][MAX_FFT];
-
 /*Racines de l'unité et les puissances
  * root_unit[N][freq] = exp(-i*2pi*freq*n/N)
  * 
  *
  */
 
+#ifdef OLI_RACINES
+static double complex root_unit[MAX_FFT][MAX_FFT];
+#endif /* OLI_RACINES*/
+
 void fourier_init()
 {
+#ifdef OLI_RACINES
     int freq;
     int order;
     double exp_factor;
@@ -19,9 +22,10 @@ void fourier_init()
 	{
 	    exp_factor = 2.0 * M_PI * (double)(freq) / (double)(order);
 
-	    root_unit[order-1][freq] = cexp(exp_factor*I);
+	    root_unit[order-1][freq] = cexp(-exp_factor*I);
 	}
     }
+#endif /* OLI_RACINES*/
 }
 
 /* 0 < order <= MAX_FFT
@@ -31,15 +35,31 @@ void fourier_init()
  */
 static inline double complex root_unit_func(int order, int freq)
 {
+#ifdef OLI_RACINES
     return root_unit[order-1][freq];
+#else
+    double exp_factor;
+    exp_factor = 2.0 * M_PI * (double)(freq) / (double)(order);
+    return cexp(-exp_factor*I);
+#endif /* OLI_RACINES*/
 }
 
+static double complex coef_even[FFT_LEVELS][H_MAX_FFT];
+static double complex coef_odd[FFT_LEVELS][H_MAX_FFT];
+static double complex fourier_even[FFT_LEVELS][H_MAX_FFT];
+static double complex fourier_odd[FFT_LEVELS][H_MAX_FFT];
 void fourier(double complex* input, double complex* output, int size)
 {
-    double complex coef_even[H_MAX_FFT];
-    double complex coef_odd[H_MAX_FFT];
-    double complex fourier_even[H_MAX_FFT];
-    double complex fourier_odd[H_MAX_FFT];
+    int level;
+    int size2;
+    for(
+	    level=0,size2=1;
+	    size2<size;
+	    size2 = size2<<1,++level
+       );
+    --level;
+
+
     int frequency = 0;
     int n;
     int h_size = size >> 1;
@@ -47,16 +67,16 @@ void fourier(double complex* input, double complex* output, int size)
     {
 	for(n=0;n<size;n+=2)
 	{
-	    coef_even[n>>1] = input[n];
-	    coef_odd[n>>1] = input[n+1];
+	    coef_even[level][n>>1] = input[n];
+	    coef_odd[level][n>>1] = input[n+1];
 	}
-	fourier(coef_even, fourier_even, h_size);
-	fourier(coef_odd, fourier_odd, h_size);
+	fourier(coef_even[level], fourier_even[level], h_size);
+	fourier(coef_odd[level], fourier_odd[level], h_size);
 	for(frequency=0;frequency<size;++frequency)
 	{
-	    output[frequency] = fourier_even[frequency&(h_size-1)]
+	    output[frequency] = fourier_even[level][frequency&(h_size-1)]
 		+ root_unit_func(size, frequency)
-		* fourier_odd[frequency&(h_size-1)];
+		* fourier_odd[level][frequency&(h_size-1)];
 	}
     }
     else
