@@ -5,7 +5,7 @@ the main compares the two algorithms against each other
 compile (with clang change CC in the Makefile otherwise)
 make all
 
-./Fourier <number of test iteration>
+./Fourier \<number of test iteration\>
 
 thank you for reading!
 
